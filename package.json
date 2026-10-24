@@ -1,0 +1,7 @@
+{
+  "name": "dte-detection-simulator",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Data Transmission Error Detection Simulator (no dependencies)",
+  "scripts": { "test": "node --test" }
+}

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Data Transmission Error Detection Simulator</title>
+  <meta name="description" content="Interactive simulator for parity, 1's-complement checksum and CRC error detection.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to simulator</a>
+
+  <header class="topbar">
+    <div class="brand">
+      <svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true">
+        <rect x="1" y="1" width="30" height="30" rx="7" fill="none" stroke="currentColor" stroke-width="2"/>
+        <path d="M6 20h4v-8h4v8h4v-8h4v8h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+      </svg>
+      <div>
+        <h1>Data Transmission Error Detection Simulator</h1>
+        <p>Parity &middot; 1's-complement checksum &middot; CRC &mdash; Computer Networks</p>
+      </div>
+    </div>
+    <ol class="steps" aria-label="Workflow">
+      <li>Message</li><li>Method</li><li>Channel</li><li>Receiver</li><li>Compare</li>
+    </ol>
+  </header>
+
+  <main id="main">
+    <!-- 1. MESSAGE -->
+    <section class="card" aria-labelledby="h-msg">
+      <h2 id="h-msg"><span class="num">1</span> Message Input</h2>
+      <div class="field">
+        <label for="message">Binary message (only 0 and 1)</label>
+        <div class="row">
+          <input id="message" class="mono grow" type="text" inputmode="numeric" autocomplete="off" spellcheck="false"
+                 value="1011010111001100" aria-describedby="msg-help msg-error">
+          <span class="pill" id="msg-len" aria-live="polite">16 bits</span>
+        </div>
+        <p id="msg-help" class="hint">Example presets:</p>
+        <div class="row wrap" id="presets"></div>
+        <p id="msg-error" class="error" role="alert"></p>
+      </div>
+    </section>
+
+    <!-- 2. METHOD -->
+    <section class="card" aria-labelledby="h-method">
+      <h2 id="h-method"><span class="num">2</span> Detection Method</h2>
+      <div class="seg" role="radiogroup" aria-label="Detection method" id="method-group">
+        <label><input type="radio" name="method" value="parity" checked><span>Parity</span></label>
+        <label><input type="radio" name="method" value="checksum"><span>Checksum</span></label>
+        <label><input type="radio" name="method" value="crc"><span>CRC</span></label>
+      </div>
+
+      <div id="cfg-parity" class="cfg">
+        <label for="parity-type">Parity type</label>
+        <select id="parity-type">
+          <option value="even">Even parity (total 1s must be even)</option>
+          <option value="odd">Odd parity (total 1s must be odd)</option>
+        </select>
+      </div>
+      <div id="cfg-checksum" class="cfg" hidden>
+        <p class="hint">8-bit words, 1's-complement sum with end-around carry, checksum = complement of the sum.
+          A short last word is padded with zeros on the <b>right</b>; padding is used in the calculation but <b>not transmitted</b>.</p>
+      </div>
+      <div id="cfg-crc" class="cfg" hidden>
+        <label for="generator">Generator polynomial (binary; must start and end with 1)</label>
+        <div class="row">
+          <input id="generator" class="mono" type="text" value="1101" autocomplete="off" spellcheck="false" aria-describedby="gen-info gen-error">
+          <span class="pill" id="gen-info"></span>
+        </div>
+        <p id="gen-error" class="error" role="alert"></p>
+      </div>
+
+      <div class="info" id="method-info"></div>
+
+      <div class="row wrap">
+        <button class="btn primary" id="btn-generate" type="button">Generate frame</button>
+        <span class="hint" id="gen-status"></span>
+      </div>
+    </section>
+
+    <!-- 3. CHANNEL -->
+    <section class="card wide" aria-labelledby="h-chan" id="sec-channel">
+      <h2 id="h-chan"><span class="num">3</span> Transmission Channel</h2>
+      <div id="channel-empty" class="empty">Generate a frame in step 2 to open the channel.</div>
+      <div id="channel-body" hidden>
+        <div class="legend" aria-label="Legend">
+          <span><i class="sw payload"></i>Payload</span>
+          <span><i class="sw pad"></i>Padding (not transmitted)</span>
+          <span><i class="sw check"></i>Detection bits</span>
+          <span><i class="sw sel"></i>Selected for corruption</span>
+          <span><i class="sw changed"></i>Changed bit</span>
+        </div>
+        <p class="hint">Positions are numbered <b>1 to N from the left</b> (bit 1 is sent first). Click a bit, or use the controls below, to select errors.
+          Errors can hit detection bits too.</p>
+
+        <h3>Sender frame <span class="pill" id="sent-len"></span></h3>
+        <div id="sent-frame" class="bits" role="group" aria-label="Sender frame bits"></div>
+        <div id="sender-detail" class="detail"></div>
+
+        <div class="controls">
+          <div class="field">
+            <label for="positions">Bit position(s) to flip (e.g. <span class="mono">5</span> or <span class="mono">3, 9, 12</span>)</label>
+            <div class="row">
+              <input id="positions" class="mono grow" type="text" autocomplete="off" spellcheck="false" aria-describedby="pos-error">
+              <button class="btn" id="btn-apply-pos" type="button">Select</button>
+            </div>
+          </div>
+          <div class="field">
+            <label for="rand-count">Random errors: count and seed</label>
+            <div class="row">
+              <input id="rand-count" type="number" min="1" value="2" class="num-in" aria-label="Number of random errors">
+              <input id="rand-seed" type="number" min="0" value="1" class="num-in" aria-label="Random seed">
+              <button class="btn" id="btn-random" type="button">Random pick</button>
+            </div>
+          </div>
+        </div>
+        <p id="pos-error" class="error" role="alert"></p>
+        <p class="hint" id="selection-summary" aria-live="polite"></p>
+        <div class="row wrap">
+          <button class="btn primary" id="btn-send-err" type="button">Transmit with errors</button>
+          <button class="btn" id="btn-send-clean" type="button">Transmit without errors</button>
+          <button class="btn ghost" id="btn-clear-sel" type="button">Clear selection</button>
+          <button class="btn ghost" id="btn-reset" type="button">Reset all</button>
+        </div>
+
+        <div id="received-wrap" hidden>
+          <h3>Received frame <span class="pill" id="flip-summary"></span></h3>
+          <div id="recv-frame" class="bits" role="group" aria-label="Received frame bits"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. RECEIVER -->
+    <section class="card wide" aria-labelledby="h-recv" id="sec-receiver">
+      <h2 id="h-recv"><span class="num">4</span> Receiver Verification</h2>
+      <div id="receiver-empty" class="empty">Transmit the frame to see the receiver's check.</div>
+      <div id="receiver-body" hidden>
+        <div id="status" class="status" role="status" aria-live="polite"></div>
+        <div id="verify-values" class="values"></div>
+        <p id="explanation" class="explain"></p>
+        <div class="row wrap">
+          <button class="btn primary" id="btn-compare" type="button">Compare all three methods</button>
+          <span class="hint">Uses the same message and the current error pattern.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. RESULTS -->
+    <section class="card wide" aria-labelledby="h-res" id="sec-results">
+      <h2 id="h-res"><span class="num">5</span> Results &amp; Comparison</h2>
+      <div id="compare-empty" class="empty">Run the comparison from step 4.</div>
+      <div id="compare-body" hidden>
+        <div class="table-wrap">
+          <table id="compare-table">
+            <caption class="sr">Parity, checksum and CRC on the same message and error pattern</caption>
+            <thead><tr><th scope="col">Method</th><th scope="col">Frame</th><th scope="col">Flipped positions</th><th scope="col">Receiver check</th><th scope="col">Outcome</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div id="compare-notes" class="detail"></div>
+        <p id="compare-summary" class="explain"></p>
+      </div>
+
+      <h3>Method comparison</h3>
+      <div class="table-wrap">
+        <table class="static">
+          <thead><tr><th scope="col"></th><th scope="col">Parity</th><th scope="col">Checksum (8-bit)</th><th scope="col">CRC</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Redundancy</th><td>1 bit</td><td>8 bits</td><td>degree of generator (3 bits for 1101)</td></tr>
+            <tr><th scope="row">Always detects</th><td>any odd number of flipped bits</td><td>any single-bit error</td><td>all single-bit errors, all bursts up to the remainder length</td></tr>
+            <tr><th scope="row">Can miss</th><td>any even number of flips</td><td>compensating flips (e.g. same column in two words)</td><td>rare patterns divisible by the generator</td></tr>
+            <tr><th scope="row">Cost</th><td>very cheap</td><td>cheap additions</td><td>shift/XOR (cheap in hardware)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Experiment history</h3>
+      <ol id="history" class="history"><li class="hint">No transmissions yet.</li></ol>
+    </section>
+  </main>
+
+  <footer class="foot">Educational simulator. Error <em>detection</em> only &mdash; it does not correct errors, and none of these checks is a security mechanism.</footer>
+
+  <script src="algorithms.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
