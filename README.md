@@ -3,7 +3,7 @@
 ## Abstract
 A browser-based simulator for three classic error-detection methods used in data communication: **parity**, the **1's-complement checksum**, and the **Cyclic Redundancy Check (CRC)**. You enter a binary message, build a transmitted frame, corrupt chosen bits of that frame, and watch the receiver verify it using only what it received. A comparison view runs all three methods on the same message and a mapped error pattern. Undetected errors are shown honestly as legitimate results.
 
-Plain HTML, CSS and vanilla JavaScript. No server, framework, build step, or internet needed.
+Built with plain HTML, CSS and vanilla JavaScript; no server, framework, build step, or internet connection is required.
 
 ## Features
 - Binary message input with validation, presets and bit counter (max 256 bits in the UI).
