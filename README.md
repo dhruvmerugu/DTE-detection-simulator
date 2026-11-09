@@ -19,6 +19,11 @@ Plain HTML, CSS and vanilla JavaScript. No server, framework, build step, or int
 - A modern browser. Open **`index.html`** directly (double-click). Nothing else.
 - Node.js 18+ only if you want to run the automated tests.
 
+## Quick start
+1. Download or clone the repository.
+2. Open `index.html` in a modern browser to use the simulator; no dependency installation is required.
+3. To run the automated test suite, install Node.js 18 or newer and run `npm test` from the project folder.
+
 ## Conventions
 **Bit positions** are **one-based and counted from the left**: position 1 is the first bit transmitted, position N the last bit of the frame. The UI and docs use this everywhere. Errors are applied to the *complete transmitted frame*, including detection bits.
 
